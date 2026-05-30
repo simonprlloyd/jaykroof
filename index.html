@@ -2992,6 +2992,45 @@ footer a:hover { color: var(--gold); }
   text-decoration: none;
 }
 .chat-call-line:hover { color: var(--blue, #1E40FF); }
+/* Q&A view */
+.chat-stream {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 4px;
+}
+.chat-qa-options { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.chat-qa-chip {
+  text-align: left;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: var(--white);
+  color: var(--ink);
+  font-family: inherit; font-size: 14.5px; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.18s;
+}
+.chat-qa-chip:hover {
+  background: rgba(30,64,255,0.05);
+  border-color: var(--blue, #1E40FF);
+  transform: translateX(2px);
+}
+.chat-quote-cta {
+  margin-top: 14px;
+  padding: 15px 18px;
+  border: none; border-radius: 12px; cursor: pointer;
+  background: linear-gradient(135deg, var(--blue, #1E40FF) 0%, var(--blue-glow, #6B85FF) 100%);
+  color: #fff; font-family: inherit; font-weight: 700; font-size: 15px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 6px 18px rgba(30,64,255,0.35);
+}
+.chat-quote-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(30,64,255,0.5); }
+.chat-back-to-qa {
+  margin-top: 6px;
+  background: none; border: none; cursor: pointer;
+  color: rgba(6,8,24,0.55); font-family: inherit; font-size: 13.5px;
+  text-align: center; padding: 8px;
+}
+.chat-back-to-qa:hover { color: var(--blue, #1E40FF); }
 .chat-msg.typing {
   background: var(--white);
   border: 1px solid var(--rule);
@@ -4084,31 +4123,50 @@ footer a:hover { color: var(--gold); }
     </button>
     <div class="chat-avatar">JK</div>
     <div class="chat-header-info">
-      <div class="chat-header-name">Book a Free Estimate</div>
+      <div class="chat-header-name" id="chatTitle">Jay K Roofing</div>
       <div class="chat-header-status">● Usually replies same day</div>
     </div>
     <button class="chat-close" id="chatClose" aria-label="Close">×</button>
   </div>
-  <div class="chat-body" id="chatBody">
-    <div class="chat-msg bot">
-      👋 Hey there! Don't feel like calling? No problem. Drop your name, number, and email and we'll reach out about your free roof estimate or inspection — usually the same day.
-    </div>
 
+  <!-- VIEW 1: Q&A -->
+  <div class="chat-body" id="chatQAView">
+    <div class="chat-stream" id="chatStream">
+      <div class="chat-msg bot">
+        👋 Hi! I'm here to help. Tap a question below for a quick answer — or get a free quote and we'll reach out.
+      </div>
+    </div>
+    <div class="chat-qa-options" id="chatQAOptions">
+      <button class="chat-qa-chip" data-q="cost">💰 How much does a new roof cost?</button>
+      <button class="chat-qa-chip" data-q="time">⏱️ How long does a roof take?</button>
+      <button class="chat-qa-chip" data-q="storm">⛈️ Storm damage &amp; insurance?</button>
+      <button class="chat-qa-chip" data-q="warranty">🛡️ What warranty do you offer?</button>
+      <button class="chat-qa-chip" data-q="areas">📍 What areas do you serve?</button>
+      <button class="chat-qa-chip" data-q="licensed">✅ Are you licensed &amp; insured?</button>
+      <button class="chat-qa-chip" data-q="services">🏠 What services do you offer?</button>
+    </div>
+    <button class="chat-quote-cta" id="chatQuoteCta"><span>📅 Get My Free Quote →</span></button>
+    <a href="tel:5702251525" class="chat-call-line">or call 570-225-1525</a>
+  </div>
+
+  <!-- VIEW 2: Booking form -->
+  <div class="chat-body" id="chatBookView" style="display:none;">
+    <div class="chat-msg bot">
+      Great! Drop your name, number, and email and we'll reach out about your free roof estimate or inspection — usually the same day. 👇
+    </div>
     <form id="chatBookForm" class="chat-book-form" novalidate>
       <input type="text"  id="cbName"  name="name"  placeholder="Your name" autocomplete="name" required />
       <input type="tel"   id="cbPhone" name="phone" placeholder="Phone number" autocomplete="tel" required />
       <input type="email" id="cbEmail" name="email" placeholder="Email address" autocomplete="email" required />
-      <button type="submit" class="chat-book-btn ripple" id="cbSubmit"><span>Book My Free Estimate →</span></button>
+      <button type="submit" class="chat-book-btn ripple" id="cbSubmit"><span>Send My Request →</span></button>
       <div class="chat-book-status" id="cbStatus" role="status" aria-live="polite"></div>
     </form>
-
     <div class="chat-or"><span>or</span></div>
-
     <a href="sms:+15702251525" class="chat-text-btn" id="chatTextBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Text us directly
     </a>
-    <a href="tel:5702251525" class="chat-call-line">or call 570-225-1525</a>
+    <button class="chat-back-to-qa" id="chatBackToQA">← Back to questions</button>
   </div>
 </div>
 
@@ -4447,13 +4505,67 @@ footer a:hover { color: var(--gold); }
   function openChat() {
     chatWindow.classList.add('open');
     launcherWrap.classList.add('hide');
-    const n = document.getElementById('cbName');
-    if (n) setTimeout(() => n.focus(), 300);
   }
   function closeChat() {
     chatWindow.classList.remove('open');
     launcherWrap.classList.remove('hide');
   }
+
+  // ---- Q&A view + view switching ----
+  (function () {
+    const qaView = document.getElementById('chatQAView');
+    const bookView = document.getElementById('chatBookView');
+    const stream = document.getElementById('chatStream');
+    const options = document.getElementById('chatQAOptions');
+    const quoteCta = document.getElementById('chatQuoteCta');
+    const backToQA = document.getElementById('chatBackToQA');
+    const title = document.getElementById('chatTitle');
+    if (!qaView) return;
+
+    const ANSWERS = {
+      cost: "Most new roofs in our area run roughly $8,000–$20,000 depending on the size, pitch, and material (asphalt shingle vs. metal). Every estimate is free and exact — no guessing. Want me to set one up?",
+      time: "Most residential roofs are done in a single day. Bigger or steeper roofs can take two. We always do a full cleanup and final walkthrough before we leave.",
+      storm: "Yes — storm and wind damage is one of the most common things we handle. We document the damage with photos, work directly with your insurance company, and get your home back under cover fast. You typically just pay your deductible.",
+      warranty: "Every roof replacement is backed by a lifetime workmanship warranty, plus the manufacturer's material warranty. Same name on the truck is the name on your warranty.",
+      areas: "We're based in Mahanoy City and serve all of Schuylkill County — including Pottsville, Frackville, Shenandoah, Tamaqua, Schuylkill Haven, St. Clair, Minersville, Ashland and more. Not sure if you're covered? Just ask!",
+      licensed: "Yes — Jay K Roofing & Construction is fully licensed and insured in Pennsylvania, with general liability and workers' comp coverage. We're also a GAF Certified Plus contractor.",
+      services: "We do it all: roof replacement, roof repair, storm damage restoration, metal & asphalt shingle roofing, plus gutters and siding. One local crew, start to finish."
+    };
+
+    function addMsg(role, text) {
+      const m = document.createElement('div');
+      m.className = 'chat-msg ' + role;
+      m.textContent = text;
+      stream.appendChild(m);
+      qaView.scrollTop = qaView.scrollHeight;
+    }
+
+    options.querySelectorAll('.chat-qa-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const q = btn.dataset.q;
+        addMsg('user', btn.textContent.replace(/^[^\w]+\s*/, '').trim());
+        setTimeout(() => {
+          addMsg('bot', ANSWERS[q] || "Great question — give us a call at 570-225-1525 and we'll help you out.");
+          qaView.scrollTop = qaView.scrollHeight;
+        }, 350);
+      });
+    });
+
+    function showBooking() {
+      qaView.style.display = 'none';
+      bookView.style.display = 'flex';
+      if (title) title.textContent = 'Get a Free Quote';
+      const n = document.getElementById('cbName');
+      if (n) setTimeout(() => n.focus(), 250);
+    }
+    function showQA() {
+      bookView.style.display = 'none';
+      qaView.style.display = 'flex';
+      if (title) title.textContent = 'Jay K Roofing';
+    }
+    if (quoteCta) quoteCta.addEventListener('click', showBooking);
+    if (backToQA) backToQA.addEventListener('click', showQA);
+  })();
 
   launcher.addEventListener('click', openChat);
   chatClose.addEventListener('click', closeChat);
