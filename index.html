@@ -3031,6 +3031,48 @@ footer a:hover { color: var(--gold); }
   text-align: center; padding: 8px;
 }
 .chat-back-to-qa:hover { color: var(--blue, #1E40FF); }
+/* Conversation input bar */
+.chat-input-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--rule);
+  background: var(--white);
+}
+.chat-text-input {
+  flex: 1;
+  padding: 13px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: inherit; font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chat-text-input::placeholder { color: rgba(6,8,24,0.4); }
+.chat-text-input:focus { border-color: var(--blue, #1E40FF); box-shadow: 0 0 0 3px rgba(30,64,255,0.12); }
+.chat-send-btn {
+  flex-shrink: 0;
+  width: 46px; height: 46px;
+  border: none; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue, #1E40FF) 0%, var(--blue-glow, #6B85FF) 100%);
+  color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow: 0 4px 14px rgba(30,64,255,0.35);
+}
+.chat-send-btn:hover { transform: scale(1.06); }
+.chat-send-btn svg { width: 18px; height: 18px; }
+/* typing dots */
+.chat-msg.typing { display: inline-flex; gap: 4px; align-items: center; }
+.chat-msg.typing span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(6,8,24,0.35);
+  animation: chatTypeDot 1.2s infinite ease-in-out;
+}
+.chat-msg.typing span:nth-child(2) { animation-delay: 0.18s; }
+.chat-msg.typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes chatTypeDot { 0%,60%,100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
 .chat-msg.typing {
   background: var(--white);
   border: 1px solid var(--rule);
@@ -4129,24 +4171,20 @@ footer a:hover { color: var(--gold); }
     <button class="chat-close" id="chatClose" aria-label="Close">×</button>
   </div>
 
-  <!-- VIEW 1: Q&A -->
+  <!-- VIEW 1: Conversation -->
   <div class="chat-body" id="chatQAView">
     <div class="chat-stream" id="chatStream">
       <div class="chat-msg bot">
-        👋 Hi! I'm here to help. Tap a question below for a quick answer — or get a free quote and we'll reach out.
+        👋 Hi! I'm the Jay K Roofing assistant. Ask me anything about our roofing, repairs, storm damage, warranty, or the areas we serve — or tap below to get your free quote.
       </div>
     </div>
-    <div class="chat-qa-options" id="chatQAOptions">
-      <button class="chat-qa-chip" data-q="cost">💰 How much does a new roof cost?</button>
-      <button class="chat-qa-chip" data-q="time">⏱️ How long does a roof take?</button>
-      <button class="chat-qa-chip" data-q="storm">⛈️ Storm damage &amp; insurance?</button>
-      <button class="chat-qa-chip" data-q="warranty">🛡️ What warranty do you offer?</button>
-      <button class="chat-qa-chip" data-q="areas">📍 What areas do you serve?</button>
-      <button class="chat-qa-chip" data-q="licensed">✅ Are you licensed &amp; insured?</button>
-      <button class="chat-qa-chip" data-q="services">🏠 What services do you offer?</button>
-    </div>
     <button class="chat-quote-cta" id="chatQuoteCta"><span>📅 Get My Free Quote →</span></button>
-    <a href="tel:5702251525" class="chat-call-line">or call 570-225-1525</a>
+  </div>
+  <div class="chat-input-bar" id="chatInputBar">
+    <input type="text" id="chatTextInput" class="chat-text-input" placeholder="Type your question…" autocomplete="off" />
+    <button id="chatSendBtn" class="chat-send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
   </div>
 
   <!-- VIEW 2: Booking form -->
@@ -4511,48 +4549,105 @@ footer a:hover { color: var(--gold); }
     launcherWrap.classList.remove('hide');
   }
 
-  // ---- Q&A view + view switching ----
+  // ---- Conversational chat + view switching (no prices/numbers given) ----
   (function () {
     const qaView = document.getElementById('chatQAView');
     const bookView = document.getElementById('chatBookView');
     const stream = document.getElementById('chatStream');
-    const options = document.getElementById('chatQAOptions');
     const quoteCta = document.getElementById('chatQuoteCta');
     const backToQA = document.getElementById('chatBackToQA');
+    const inputBar = document.getElementById('chatInputBar');
+    const textInput = document.getElementById('chatTextInput');
+    const sendBtn = document.getElementById('chatSendBtn');
     const title = document.getElementById('chatTitle');
     if (!qaView) return;
-
-    const ANSWERS = {
-      cost: "Most new roofs in our area run roughly $8,000–$20,000 depending on the size, pitch, and material (asphalt shingle vs. metal). Every estimate is free and exact — no guessing. Want me to set one up?",
-      time: "Most residential roofs are done in a single day. Bigger or steeper roofs can take two. We always do a full cleanup and final walkthrough before we leave.",
-      storm: "Yes — storm and wind damage is one of the most common things we handle. We document the damage with photos, work directly with your insurance company, and get your home back under cover fast. You typically just pay your deductible.",
-      warranty: "Every roof replacement is backed by a lifetime workmanship warranty, plus the manufacturer's material warranty. Same name on the truck is the name on your warranty.",
-      areas: "We're based in Mahanoy City and serve all of Schuylkill County — including Pottsville, Frackville, Shenandoah, Tamaqua, Schuylkill Haven, St. Clair, Minersville, Ashland and more. Not sure if you're covered? Just ask!",
-      licensed: "Yes — Jay K Roofing & Construction is fully licensed and insured in Pennsylvania, with general liability and workers' comp coverage. We're also a GAF Certified Plus contractor.",
-      services: "We do it all: roof replacement, roof repair, storm damage restoration, metal & asphalt shingle roofing, plus gutters and siding. One local crew, start to finish."
-    };
 
     function addMsg(role, text) {
       const m = document.createElement('div');
       m.className = 'chat-msg ' + role;
       m.textContent = text;
       stream.appendChild(m);
+      stream.scrollTop = stream.scrollHeight;
       qaView.scrollTop = qaView.scrollHeight;
+      return m;
+    }
+    function addTyping() {
+      const m = document.createElement('div');
+      m.className = 'chat-msg bot typing';
+      m.innerHTML = '<span></span><span></span><span></span>';
+      stream.appendChild(m);
+      stream.scrollTop = stream.scrollHeight;
+      return m;
     }
 
-    options.querySelectorAll('.chat-qa-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = btn.dataset.q;
-        addMsg('user', btn.textContent.replace(/^[^\w]+\s*/, '').trim());
-        setTimeout(() => {
-          addMsg('bot', ANSWERS[q] || "Great question — give us a call at 570-225-1525 and we'll help you out.");
-          qaView.scrollTop = qaView.scrollHeight;
-        }, 350);
-      });
-    });
+    // Keyword-based replies. IMPORTANT: never quote prices or specific numbers —
+    // always steer cost/time/measurement questions to a free quote.
+    function getReply(raw) {
+      const t = (raw || '').toLowerCase();
+      const has = (...words) => words.some(w => t.includes(w));
+
+      // Pricing / cost / numbers -> steer to quote, no figures
+      if (has('cost','price','pricing','how much','quote','estimate','cheap','expensive','afford','$','dollar','financ','payment')) {
+        return "Great question! Every roof is different, so we don't like to throw out a random number — we give you a free, no-pressure written estimate that's exact for your home. Tap \u201cGet My Free Quote\u201d below and we'll take care of you.";
+      }
+      // Time / how long -> no specific numbers
+      if (has('how long','how many days','timeline','time frame','timeframe','when can','schedule','duration','fast','quick')) {
+        return "Most roofs are finished quickly with minimal disruption, and we always do a full cleanup before we leave. Exact timing depends on your roof, so the best next step is a free on-site look — want me to set that up?";
+      }
+      // Storm / insurance
+      if (has('storm','wind','hail','leak','insurance','claim','damage','emergency')) {
+        return "Yes — storm and leak damage is one of the most common things we handle. We document everything, work directly with your insurance company, and get your home back under cover fast. Want us to come take a look? It's free.";
+      }
+      // Warranty
+      if (has('warranty','guarantee','warrant')) {
+        return "Every roof replacement is backed by a lifetime workmanship warranty, plus the manufacturer's material warranty. The same name on the truck is the name on your warranty.";
+      }
+      // Areas
+      if (has('area','serve','location','where','near me','town','city','county','mahanoy','pottsville','frackville','tamaqua','shenandoah')) {
+        return "We're based in Mahanoy City and serve all of Schuylkill County and the surrounding area. Not sure if you're covered? Tell us your town or just request a quote and we'll confirm.";
+      }
+      // Licensed / insured / trust
+      if (has('licens','insur','certified','gaf','legit','trust','reviews','reputation','experience','years')) {
+        return "Jay K Roofing & Construction is fully licensed and insured in Pennsylvania, a GAF Certified Plus contractor, and we've been serving the area for 20+ years. You're in good hands.";
+      }
+      // Services
+      if (has('service','do you do','offer','metal','shingle','gutter','siding','repair','replace','flat','rubber','install')) {
+        return "We handle it all — roof replacement, roof repair, storm damage, metal & asphalt shingle roofing, plus gutters and siding. One local crew from start to finish. What's going on with your roof?";
+      }
+      // Greetings
+      if (has('hi','hello','hey','good morning','good afternoon','yo ')) {
+        return "Hey there! Happy to help. You can ask about our services, warranty, storm/insurance work, or the areas we cover — or tap \u201cGet My Free Quote\u201d and we'll reach out.";
+      }
+      // Thanks
+      if (has('thank','thanks','appreciate')) {
+        return "Anytime! Whenever you're ready, tap \u201cGet My Free Quote\u201d and we'll get you taken care of. \uD83D\uDC4D";
+      }
+      // Booking intent
+      if (has('book','set up','sign up','get started','contact','call me','reach out','come out','inspect')) {
+        return "Awesome — let's get you set up. Tap \u201cGet My Free Quote\u201d below and drop your name, number, and email. We usually reach out the same day.";
+      }
+      // Fallback
+      return "Good question! For anything specific to your home, the best move is a free quote — tap \u201cGet My Free Quote\u201d below and our team will reach out. Or ask me about our services, warranty, storm/insurance work, or service areas.";
+    }
+
+    function handleSend() {
+      const val = (textInput.value || '').trim();
+      if (!val) return;
+      addMsg('user', val);
+      textInput.value = '';
+      const typing = addTyping();
+      setTimeout(() => {
+        typing.remove();
+        addMsg('bot', getReply(val));
+      }, 650);
+    }
+
+    if (sendBtn) sendBtn.addEventListener('click', handleSend);
+    if (textInput) textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
     function showBooking() {
       qaView.style.display = 'none';
+      if (inputBar) inputBar.style.display = 'none';
       bookView.style.display = 'flex';
       if (title) title.textContent = 'Get a Free Quote';
       const n = document.getElementById('cbName');
@@ -4561,6 +4656,7 @@ footer a:hover { color: var(--gold); }
     function showQA() {
       bookView.style.display = 'none';
       qaView.style.display = 'flex';
+      if (inputBar) inputBar.style.display = 'flex';
       if (title) title.textContent = 'Jay K Roofing';
     }
     if (quoteCta) quoteCta.addEventListener('click', showBooking);
