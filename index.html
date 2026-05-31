@@ -4680,7 +4680,7 @@ footer a:hover { color: var(--gold); }
     launcher.click();
   });
 
-  // ---- In-chat booking form: sends name/phone/email to the office (Formspree -> text) ----
+  // ---- In-chat booking form: opens a pre-filled text message to the office ----
   (function () {
     const form = document.getElementById('chatBookForm');
     if (!form) return;
@@ -4690,6 +4690,8 @@ footer a:hover { color: var(--gold); }
     const phone = document.getElementById('cbPhone');
     const email = document.getElementById('cbEmail');
 
+    const OFFICE_NUMBER = '5702251525'; // texts go here
+
     function setStatus(msg, type) {
       statusEl.textContent = msg;
       statusEl.className = 'chat-book-status' + (type ? ' ' + type : '');
@@ -4697,7 +4699,15 @@ footer a:hover { color: var(--gold); }
     const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     const validPhone = v => v.replace(/\D/g, '').length >= 10;
 
-    form.addEventListener('submit', async function (e) {
+    function buildSmsLink(body) {
+      // iOS uses &body=, Android/others use ?body= — detect iOS for the right separator
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const sep = isIOS ? '&' : '?';
+      return 'sms:' + OFFICE_NUMBER + sep + 'body=' + encodeURIComponent(body);
+    }
+
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       [name, phone, email].forEach(f => f.classList.remove('cb-invalid'));
       let bad = null;
@@ -4706,33 +4716,15 @@ footer a:hover { color: var(--gold); }
       if (!validEmail(email.value)) { email.classList.add('cb-invalid'); bad = bad || 'Please enter a valid email address.'; }
       if (bad) { setStatus(bad, 'err'); return; }
 
-      submitBtn.disabled = true;
-      const orig = submitBtn.querySelector('span').textContent;
-      submitBtn.querySelector('span').textContent = 'Sending…';
-      setStatus('', '');
+      const msg = 'Hi Jay K Roofing! I\'d like a free roof estimate.\n\n'
+        + 'Name: ' + name.value.trim() + '\n'
+        + 'Phone: ' + phone.value.trim() + '\n'
+        + 'Email: ' + email.value.trim();
 
-      // Reuse the same Formspree endpoint as the main contact form
-      const action = (document.getElementById('quoteForm') || {}).action || 'https://formspree.io/f/YOUR_FORM_ID';
-      const fd = new FormData();
-      fd.append('name', name.value.trim());
-      fd.append('phone', phone.value.trim());
-      fd.append('email', email.value.trim());
-      fd.append('_subject', 'New booking from website chat — JayK');
+      // Open the customer's text app, pre-filled and addressed to the office
+      window.location.href = buildSmsLink(msg);
 
-      try {
-        const res = await fetch(action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd });
-        if (res.ok) {
-          form.reset();
-          setStatus("✓ You're all set! Jay or the team will reach out shortly. Thanks!", 'ok');
-        } else {
-          setStatus('Hmm, that didn\'t go through. Please text or call 570-225-1525.', 'err');
-        }
-      } catch (err) {
-        setStatus('Network issue. Please text or call 570-225-1525.', 'err');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.querySelector('span').textContent = orig;
-      }
+      setStatus("✓ Opening your text app — just hit send and we'll get right back to you!", 'ok');
     });
   })();
 
@@ -4783,7 +4775,15 @@ footer a:hover { color: var(--gold); }
     function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
     function validPhone(v) { return (v.replace(/\D/g, '').length >= 10); }
 
-    form.addEventListener('submit', async function (e) {
+    const OFFICE_NUMBER = '5702251525';
+    function buildSmsLink(body) {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const sep = isIOS ? '&' : '?';
+      return 'sms:' + OFFICE_NUMBER + sep + 'body=' + encodeURIComponent(body);
+    }
+
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       [name, phone, email].forEach(f => f.classList.remove('qf-invalid'));
 
@@ -4793,30 +4793,13 @@ footer a:hover { color: var(--gold); }
       if (!validEmail(email.value)) { email.classList.add('qf-invalid'); bad = bad || 'Please enter a valid email address.'; }
       if (bad) { setStatus(bad, 'err'); return; }
 
-      submitBtn.disabled = true;
-      const original = submitBtn.querySelector('span').textContent;
-      submitBtn.querySelector('span').textContent = 'Sending…';
-      setStatus('', '');
+      const msg = 'Hi Jay K Roofing! I\'d like a free roof estimate.\n\n'
+        + 'Name: ' + name.value.trim() + '\n'
+        + 'Phone: ' + phone.value.trim() + '\n'
+        + 'Email: ' + email.value.trim();
 
-      try {
-        const res = await fetch(form.action, {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' },
-          body: new FormData(form)
-        });
-        if (res.ok) {
-          form.reset();
-          setStatus("Got it! We'll text or call you shortly. Thanks!", 'ok');
-        } else {
-          // Likely the form ID hasn't been set up yet
-          setStatus('Something went wrong sending that. Please call us at 570-225-1525.', 'err');
-        }
-      } catch (err) {
-        setStatus('Network error. Please call us at 570-225-1525.', 'err');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.querySelector('span').textContent = original;
-      }
+      window.location.href = buildSmsLink(msg);
+      setStatus("✓ Opening your text app — just hit send and we'll get right back to you!", 'ok');
     });
   })();
 </script>
